@@ -1,6 +1,8 @@
-# ApexAI: Low-Latency Virtual F1 Racecraft Engineer 🏎️💨
+# PitwallKing: Low-Latency Virtual Multi-Sim Racecraft Engineer 🏎️👑
 
-An on-prem, multi-tiered inference and racecraft strategy engine designed for EA Sports F1 and sim-racing telemetry. Built from a **Senior Inference Engineering** perspective to conquer latency bottlenecks at 300+ km/h.
+An on-prem, multi-tiered inference and racecraft strategy engine designed for EA Sports F1, Assetto Corsa / ACC, and iRacing. Built from a **Senior Inference Engineering** perspective to conquer real-time latency bottlenecks at 300+ km/h.
+
+📖 **Complete User Flow & Setup Guide:** See [docs/USER_GUIDE.md](docs/USER_GUIDE.md)
 
 ---
 
