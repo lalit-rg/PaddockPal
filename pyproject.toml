@@ -1,0 +1,21 @@
+[project]
+name = "pitwallking"
+version = "0.1.0"
+description = "Low-Latency Virtual Multi-Sim Racecraft Engineer"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "flask>=3.0.0",
+    "fastf1>=3.4.0",
+    "numpy<2.0.0",
+    "pandas>=2.0.0,<2.2.0",
+    "pyarrow>=14.0.0",
+    "matplotlib>=3.8.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["engine", "personas", "telemetry", "mock_data", "ui"]
