@@ -6,11 +6,20 @@ Serves a low-latency live HUD dashboard with:
 - Push-To-Talk radio interface with sub-millisecond response feeds
 """
 
+import os
+import sys
 import json
+
+# Ensure project root is always in Python module search path
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
+
 from flask import Flask, render_template, request, jsonify
 from personas.persona_catalog import PERSONAS
 from engine.assistant import RaceEngineerAssistant
 from mock_data.scenarios import MOCK_SCENARIOS
+from post_session_engine import PostSessionDebriefEngine
 
 app = Flask(__name__, template_folder="ui/templates", static_folder="ui/static")
 
@@ -45,6 +54,40 @@ def change_persona():
 @app.route("/api/telemetry")
 def get_telemetry():
     return jsonify(current_telemetry)
+
+@app.route("/api/debrief", methods=["POST"])
+def get_debrief():
+    data = request.json or {}
+    finish_pos = data.get("position", 1)
+    persona_id = assistant.persona_id
+    radio = PostSessionDebriefEngine.generate_radio_call(persona_id, finish_pos)
+    summary = PostSessionDebriefEngine.generate_telemetry_debrief_summary({
+        "position": finish_pos,
+        "fastest_lap": "1:31.840",
+    })
+    
+    # FastF1 / TomShaw-style lap telemetry comparison traces for visualization
+    # Generates speed, throttle, and brake distance traces (0m to 5412m for Bahrain)
+    distance_points = list(range(0, 5500, 100))
+    player_speed_trace = [
+        int(180 + 130 * abs(0.5 - (d % 1000) / 1000.0) * 2) for d in distance_points
+    ]
+    reference_speed_trace = [
+        int(182 + 132 * abs(0.5 - (d % 1000) / 1000.0) * 2) for d in distance_points
+    ]
+
+    telemetry_chart = {
+        "distances": distance_points,
+        "player_speed": player_speed_trace,
+        "reference_speed": reference_speed_trace,
+        "delta_s": [round((p - r) / 100.0, 3) for p, r in zip(player_speed_trace, reference_speed_trace)]
+    }
+
+    return jsonify({
+        "radio_call": radio,
+        "summary": summary,
+        "telemetry_chart": telemetry_chart
+    })
 
 def run_ui(host="127.0.0.1", port=5000, debug=False):
     print("=" * 70)

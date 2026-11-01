@@ -364,6 +364,7 @@
             <div class="indicator">
                 <span>LATENCY: <strong style="color: var(--f1-neon-green);" id="ping-latency">&lt; 0.5ms</strong></span>
             </div>
+            <button class="btn-radio" style="padding: 6px 12px; font-size: 0.75rem;" onclick="triggerPostRaceDebrief()">🏁 POST-RACE DEBRIEF</button>
         </div>
     </header>
 
@@ -466,6 +467,26 @@
                 <div class="hud-metric">
                     <div class="hud-label">DRS Status</div>
                     <div class="hud-val" style="color: var(--f1-neon-green);" id="val-drs">ACTIVE</div>
+                </div>
+            </div>
+
+            <!-- FastF1 / Tom Shaw Style Race Replay & Telemetry Trace Visualization -->
+            <div id="debrief-panel" style="display: none; background: #0c0f15; border: 1px solid var(--f1-red); border-radius: 4px; padding: 14px; margin-top: 14px;">
+                <div class="card-header" style="margin-bottom: 8px;">
+                    <span style="color: var(--f1-yellow);">FASTF1 RACE DEBRIEF & TRACE REPLAY</span>
+                    <span id="debrief-pos-badge" style="color: var(--f1-neon-green);">P1 WINNER</span>
+                </div>
+                <div style="font-size: 0.9rem; color: #cbd5e1; margin-bottom: 10px;" id="debrief-summary-text">
+                    • Braking consistency: 94.2% within 5m envelope<br>
+                    • Clean air gap buffer: +3.4s net advantage achieved via undercut on Lap 24.
+                </div>
+                <!-- Interactive Canvas Telemetry Trace -->
+                <canvas id="telemetryCanvas" width="550" height="120" style="width: 100%; height: 120px; background: #05070a; border: 1px solid var(--carbon-border); border-radius: 3px;"></canvas>
+                <div style="display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); margin-top: 4px;">
+                    <span>START/FINISH (0m)</span>
+                    <span style="color: var(--f1-neon-cyan);">── PLAYER TRACE</span>
+                    <span style="color: var(--f1-yellow);">── REF FASTEST (VER)</span>
+                    <span>TURN 14 (5412m)</span>
                 </div>
             </div>
         </section>
@@ -571,6 +592,68 @@
         function quickQuery(text) {
             document.getElementById('radio-input').value = text;
             sendRadioQuery(new Event('submit'));
+        }
+
+        function triggerPostRaceDebrief() {
+            fetch('/api/debrief', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({position: 1})
+            })
+            .then(res => res.json())
+            .then(data => {
+                const selector = document.getElementById('persona-selector');
+                const pName = personas[selector.value].name.split(" ")[0];
+                appendRadioMessage("ENGINEER (" + pName + ")", data.radio_call, "engineer", "RADIO FINISH");
+
+                // Show FastF1 / Tom Shaw Style Trace Panel
+                const panel = document.getElementById('debrief-panel');
+                panel.style.display = 'block';
+
+                document.getElementById('debrief-summary-text').innerHTML = `
+                    • <strong>Braking Consistency:</strong> ${data.summary.braking_marker_consistency}<br>
+                    • <strong>Tyre Degradation:</strong> ${data.summary.tyre_deg_efficiency}<br>
+                    • <strong>Dirty Air Lost:</strong> ${data.summary.traffic_time_lost}<br>
+                    • <strong>Strategic Key:</strong> ${data.summary.key_takeaway}
+                `;
+
+                // Render Telemetry Comparison Canvas
+                drawTelemetryTrace(data.telemetry_chart);
+            });
+        }
+
+        function drawTelemetryTrace(chart) {
+            const canvas = document.getElementById('telemetryCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const speeds = chart.player_speed;
+            const refSpeeds = chart.reference_speed;
+            const len = speeds.length;
+
+            // Draw Reference Speed (Yellow)
+            ctx.strokeStyle = '#ffcc00';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            for (let i = 0; i < len; i++) {
+                const x = (i / (len - 1)) * canvas.width;
+                const y = canvas.height - ((refSpeeds[i] - 150) / 200) * canvas.height;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+
+            // Draw Player Speed (Cyan)
+            ctx.strokeStyle = '#00f2fe';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < len; i++) {
+                const x = (i / (len - 1)) * canvas.width;
+                const y = canvas.height - ((speeds[i] - 150) / 200) * canvas.height;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
         }
     </script>
 </body>
