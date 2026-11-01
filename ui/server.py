@@ -21,7 +21,12 @@ from engine.assistant import RaceEngineerAssistant
 from mock_data.scenarios import MOCK_SCENARIOS
 from post_session_engine import PostSessionDebriefEngine
 
-app = Flask(__name__, template_folder="ui/templates", static_folder="ui/static")
+# Define absolute paths for templates and static files relative to this file's location
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+TEMPLATE_DIR = os.path.join(CURRENT_DIR, "templates")
+STATIC_DIR = os.path.join(CURRENT_DIR, "static")
+
+app = Flask(__name__, template_folder=TEMPLATE_DIR, static_folder=STATIC_DIR)
 
 # Shared assistant instance
 assistant = RaceEngineerAssistant(persona_id="gp_direct")
