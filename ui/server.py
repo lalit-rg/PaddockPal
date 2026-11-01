@@ -20,6 +20,7 @@ from personas.persona_catalog import PERSONAS
 from engine.assistant import RaceEngineerAssistant
 from mock_data.scenarios import MOCK_SCENARIOS
 from post_session_engine import PostSessionDebriefEngine
+from telemetry.connection_bridge import UniversalConnectionBridge
 
 # Define absolute paths for templates and static files relative to this file's location
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -34,12 +35,16 @@ current_telemetry = MOCK_SCENARIOS["hunting_for_p2"]["telemetry_state"]
 
 @app.route("/")
 def index():
+    lan_ip = UniversalConnectionBridge.get_local_lan_ip()
+    entry_points = UniversalConnectionBridge.get_supported_entry_points()
     return render_template(
         "dashboard.html",
         personas=PERSONAS,
         personas_json=json.dumps(PERSONAS),
         active_persona=assistant.persona_id,
-        telemetry=current_telemetry
+        telemetry=current_telemetry,
+        lan_ip=lan_ip,
+        entry_points=entry_points
     )
 
 @app.route("/api/ask", methods=["POST"])
