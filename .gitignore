@@ -4,3 +4,4 @@ __pycache__/
 .venv/
 fastf1_cache/
 *.log
+.gemini
