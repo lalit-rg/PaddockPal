@@ -1,89 +1,99 @@
-# Contributing to ApexAI: Virtual F1 Racecraft Engineer 🏎️🏁
+# Contributing to PaddockPal 🏎️🏁
 
-First off, thank you for considering contributing to **ApexAI**! 
+> **"Choose your pal before you go flying."**  
+> We treat PaddockPal as an engineering case study on **real-time low-latency inference systems**. Contributions are welcome from motorsport engineers, telemetry analysts, and AI developers.
 
-ApexAI is built to solve one of the hardest problems in sim-racing AI: **delivering deep, tactical racecraft advice at 300+ km/h without latency bottlenecks.** Whether you are an inference engineer, motorsport telemetry analyst, sim-racer, or prompt engineer, your insights are welcome.
-
----
-
-## 🎯 Guiding Engineering Principles
-
-Before contributing code, please keep our core tenets in mind:
-
-1. **The Latency Hierarchy is Sacred:**
-   - **Tier 1 (< 1ms):** Pure deterministic slot-filling from the `TelemetryRingBuffer`. Never route simple telemetry queries (gaps, tyre temps, status checks) to an LLM.
-   - **Tier 2 (50–150ms):** Quantized Small Language Models (SLMs) running locally with pre-warmed KV caches.
-   - **Tier 3 (500–1500ms):** Complex cloud strategy farm. Always pair with a $<30\text{ms}$ speculative radio acknowledgment to mask network wait time.
-2. **Minimalism First (`Ponytail` Philosophy):**
-   - The best code is the code you never wrote.
-   - Favor Python's standard library (`socket`, `struct`, `dataclasses`, `deque`, `math`) over bulky dependencies.
-3. **Authentic Motorsport Racecraft:**
-   - Heuristics must reflect real FIA regulations (track limits, illegal passes), vehicle dynamics (carcass vs. surface temperatures, trail-braking deceleration slopes), and strategic math (clean-air pit slots, Safety Car probability).
+To keep the codebase reliable, maintainable, and free of bloat, we enforce strict PR gates and engineering standards.
 
 ---
 
-## 🛠️ Areas Where We Need Contributions
+## 🚫 Hard Rule: Nobody Pushes Directly to `main`
 
-### 1. New Race Engineer Personas
-Have an idea for a legendary race engineer or driver personality?
-- Add your profile to `personas/persona_catalog.py`.
-- Include:
-  - `id` & `name`
-  - `iconic_taglines`: 4–6 authentic radio calls.
-  - `system_prompt`: Token-budgeted prompt ($\le 22$ words ceiling) with strict persona tone.
-  - `sample_acknowledgments`: Instant $<30\text{ms}$ radio masking soundbites.
+- **Branch Protection:** The `main` branch is locked. All updates must arrive via a dedicated feature branch and an approved Pull Request.
+- **Passing CI Required:** The GitHub Actions Quality Gate must pass all linting, formatting, and unit tests before any PR can be merged.
 
-### 2. Telemetry Ingestion & Sim Support
-- Currently, `telemetry/udp_receiver.py` is configured for **EA Sports F1 (2023, 2024, 2025)**.
-- Contributions to add packet parsers for **Assetto Corsa / ACC (Shared Memory)**, **iRacing (SDK)**, and **rFactor 2** are highly encouraged!
-
-### 3. Prescriptive Strategy Formulas
-Help refine the decision matrices in `racecraft_engine.py` and `telemetry_analytics.py`:
-- Tyre wear degradation curves per track layout (high-energy circuits like Silverstone vs low-energy like Monza).
-- Dirty air aerodynamic wake decay formulas.
-- Dynamic undercut/overcut pit loss calculations with tire warmup deltas.
-
-### 4. Audio Post-Processing & TTS Integration
-- Adding local ultra-low latency TTS providers (e.g. **Piper TTS**, **Sherpa-ONNX**).
-- Realistic radio FX filters (300Hz–3400Hz bandpass filter, walkie-talkie chirp, background static).
+### Branch Naming Conventions
+- `feat/add-acc-pitstop-adapter`
+- `fix/tyre-thermal-crossover-threshold`
+- `perf/ring-buffer-lock-free-optimization`
+- `docs/add-motec-integration-guide`
 
 ---
 
-## 🚀 Development Workflow
+## 🛠️ Developer Setup & Pre-Commit Hooks
 
-### 1. Fork & Clone
+### 1. Clone & Set Up Isolated Environment (`uv`)
 ```bash
-git clone https://github.com/lalit-rg/ApexAI-F1RaceEngineer.git
-cd ApexAI-F1RaceEngineer
+git clone https://github.com/lalit-rg/PaddockPal.git
+cd PaddockPal
+
+# Set up virtual environment and install dev dependencies
+uv venv
+uv pip install -e .
+uv pip install pytest ruff pre-commit
 ```
 
-### 2. Verify Your Environment
-No heavy dependencies are required. Standard Python 3.10+ works out of the box:
+### 2. Install Git Pre-Commit Hooks
+Run this once so pre-commit hooks check your code automatically before every git commit:
 ```bash
-python main.py
+pre-commit install
 ```
-
-### 3. Run Test Suites
-Always run the validation scripts before submitting a PR:
-```bash
-# 1. Multi-persona inference bench
-python run_test.py
-
-# 2. Racecraft & traffic slot evaluation
-python run_advanced_strategy.py
-
-# 3. Post-session cooldown & telemetry debrief
-python run_post_session_demo.py
-```
-
-### 4. Commit Guidelines
-We follow standard Conventional Commits:
-- `feat: add Assetto Corsa Competizione shared memory receiver`
-- `fix: adjust intermediate tyre crossover wetness threshold to 18%`
-- `perf: optimize circular ring buffer wear slope computation`
-- `docs: add track-specific safety car probability documentation`
+This automatically runs:
+- `ruff check . --fix` (linting standards)
+- `ruff format .` (PEP 8 code style)
+- File hygiene (trailing whitespace, YAML/JSON validation)
 
 ---
 
-## 💬 Community & Ideas
-Feel free to open an **Issue** or start a **Discussion** to debate telemetry dynamics, share your own telemetry traces, or propose new strategy algorithms!
+## ⏱️ The Latency SLA (Strict Engineering Rules)
+
+When contributing code, you must respect our **3-Tier Latency Hierarchy**:
+
+1. **Tier 1 (< 1.0ms SLA):**
+   - Telemetry queries (*"Gap ahead"*, *"Tyre temps"*, *"Status check"*) **MUST NEVER** make network calls or query LLMs.
+   - They must read directly from the in-memory circular `TelemetryRingBuffer` via deterministic slot-filling.
+   - Any PR that introduces an LLM call into a Tier-1 code path will be rejected.
+2. **Tier 2 (50–150ms):**
+   - Local quantized Small Language Models (e.g. Qwen2.5 / SmolLM2 via `llama.cpp` or ONNX).
+   - Prompt context is limited to $<256$ tokens with pre-warmed KV caches.
+3. **Tier 3 (500–1500ms):**
+   - Cloud LLM strategy farm (Gemini / OpenAI).
+   - **Must always be paired with a $<30\text{ms}$ speculative radio acknowledgment** (*"Copy, stand by"*, *"Checking with pit wall"*) so the driver never experiences dead silence on track.
+
+---
+
+## 🧪 Testing Before Submitting a PR
+
+Always run the full test suite and linter before pushing your branch:
+
+```bash
+# 1. Run unit tests & sub-millisecond SLA latency benchmarks
+.venv\Scripts\pytest tests/ -v
+
+# 2. Run Ruff linter & formatter
+.venv\Scripts\ruff check .
+.venv\Scripts\ruff format --check .
+```
+
+All 7 core test suites (deterministic lookups, illegal overtake yield orders, track limits strike 3, traffic rejoin calculations, weather crossover, and persona integrity) must pass.
+
+---
+
+## 🏎️ Areas Where Contributions Are Encouraged
+
+1. **Multi-Sim Ingestion Adapters:**
+   - Real implementations for `IRacingAdapter` via `pyirsdk`.
+   - Assetto Corsa Competizione shared memory parser via `ctypes`.
+   - Le Mans Ultimate (LMU) / rFactor 2 shared memory pipes.
+2. **Local TTS Voice Generation:**
+   - Local Piper TTS / Sherpa-ONNX runner with authentic team radio bandpass filtering (300Hz–3400Hz).
+3. **Vehicle Dynamics Telemetry:**
+   - Corner-by-corner trail-braking deceleration slopes ($G_x$).
+   - Slip-angle estimations from steer angle and lateral $G_y$.
+
+---
+
+## 🤝 Questions & Discussion
+
+Project lead: **Lalit** ([LinkedIn: @lalit-rg](https://www.linkedin.com/in/lalit-rg/)).  
+Feel free to open an issue or connect on LinkedIn to discuss real-time systems, racecraft telemetry, or sim racing setups!

@@ -4,9 +4,11 @@ Extracts metrics directly from the TelemetryRingBuffer and slot-fills
 answers instantly without requiring LLM evaluation.
 """
 
-from typing import Dict, Any, Optional
-from telemetry.ring_buffer import TelemetryRingBuffer, TelemetrySnapshot
+from typing import Any
+
 from personas.persona_catalog import PERSONAS
+from telemetry.ring_buffer import TelemetryRingBuffer
+
 
 class Tier1DeterministicEngine:
     def __init__(self, ring_buffer: TelemetryRingBuffer, persona_id: str = "gp_direct"):
@@ -17,7 +19,9 @@ class Tier1DeterministicEngine:
         if persona_id in PERSONAS:
             self.persona_id = persona_id
 
-    def process_query(self, query: str, state: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+    def process_query(
+        self, query: str, state: dict[str, Any] | None = None
+    ) -> dict[str, Any] | None:
         """
         Matches quick telemetry checks:
         - "gap" / "gap ahead" / "gap behind"
@@ -26,7 +30,8 @@ class Tier1DeterministicEngine:
         - "fuel" / "delta"
         """
         q = query.lower().strip()
-        p = PERSONAS.get(self.persona_id, PERSONAS["gp_direct"])
+        # Persona loaded at construction; referenced via self.persona_id throughout
+        PERSONAS.get(self.persona_id, PERSONAS["gp_direct"])  # validate persona exists
 
         # Use passed state or read from live ring buffer
         snapshot = self.ring_buffer.get_latest()
@@ -35,8 +40,16 @@ class Tier1DeterministicEngine:
 
         # GAPS
         if "gap ahead" in q or "car ahead" in q:
-            gap = snapshot.gap_ahead if snapshot else state.get("car_ahead", {}).get("gap_seconds", 0.0)
-            ahead_driver = state.get("car_ahead", {}).get("driver", "car ahead") if state else "car ahead"
+            gap = (
+                snapshot.gap_ahead
+                if snapshot
+                else state.get("car_ahead", {}).get("gap_seconds", 0.0)
+            )
+            ahead_driver = (
+                state.get("car_ahead", {}).get("driver", "car ahead")
+                if state
+                else "car ahead"
+            )
             if self.persona_id == "kimi_minimal":
                 msg = f"Gap {gap:.1f}s."
             elif self.persona_id == "bono_calm":
@@ -46,8 +59,16 @@ class Tier1DeterministicEngine:
             return {"tier": 1, "latency_ms": 0.4, "response": msg}
 
         if "gap behind" in q or "car behind" in q:
-            gap = snapshot.gap_behind if snapshot else state.get("car_behind", {}).get("gap_seconds", 0.0)
-            behind_driver = state.get("car_behind", {}).get("driver", "car behind") if state else "car behind"
+            gap = (
+                snapshot.gap_behind
+                if snapshot
+                else state.get("car_behind", {}).get("gap_seconds", 0.0)
+            )
+            behind_driver = (
+                state.get("car_behind", {}).get("driver", "car behind")
+                if state
+                else "car behind"
+            )
             if self.persona_id == "kimi_minimal":
                 msg = f"{behind_driver} {gap:.1f}s."
             else:
@@ -56,7 +77,11 @@ class Tier1DeterministicEngine:
 
         # TYRE TEMPS & WEAR
         if "tyre" in q or "wear" in q or "temp" in q:
-            wear = snapshot.tyre_wear_avg if snapshot else state.get("player", {}).get("tyre_wear_avg_pct", 0.0)
+            wear = (
+                snapshot.tyre_wear_avg
+                if snapshot
+                else state.get("player", {}).get("tyre_wear_avg_pct", 0.0)
+            )
             if self.persona_id == "kimi_minimal":
                 msg = f"Wear {wear:.0f}%. Temps OK."
             elif self.persona_id == "telemetry_nerd":

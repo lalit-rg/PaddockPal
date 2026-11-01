@@ -4,7 +4,7 @@ Provides cool-down radio calls, celebratory/consoling messages,
 and structured telemetry debriefs mapped across the 10 real-world F1 personas.
 """
 
-from typing import Dict, Any
+from typing import Any
 
 POST_SESSION_RADIO_CALLS = {
     "P1_WIN": {
@@ -17,7 +17,7 @@ POST_SESSION_RADIO_CALLS = {
         "telemetry_nerd": "Checkered flag P1. Delta +4.2s. Fuel margin +0.1kg. Carcass degradation was 12% lower than simulated target.",
         "ferrari_drama": "Yes! P1! Bravo! Plan A executed perfectly! Thank you everybody!",
         "hype_spotter": "Yeehaw! Bring it home buddy, you're the champion today! Checkered flag, what a ride!",
-        "kimi_minimal": "P1. Good job."
+        "kimi_minimal": "P1. Good job.",
     },
     "PODIUM_P2_P3": {
         "bono_calm": "That is P3 on the podium, fantastic recovery drive! Solid points for the team.",
@@ -29,7 +29,7 @@ POST_SESSION_RADIO_CALLS = {
         "telemetry_nerd": "P3 confirmed. Defended against P4 by 0.6s at the line. Aero balance was optimal.",
         "ferrari_drama": "P2 podium! We are happy with the podium, question? Great drive!",
         "hype_spotter": "That's a podium finish right there! Fantastic wheel-to-wheel racing buddy!",
-        "kimi_minimal": "Podium. It's okay."
+        "kimi_minimal": "Podium. It's okay.",
     },
     "TOUGH_RACE_P8_BELOW": {
         "bono_calm": "Tough day at the office, mate. We'll debrief in the debrief room, head down.",
@@ -41,9 +41,10 @@ POST_SESSION_RADIO_CALLS = {
         "telemetry_nerd": "P9. Data indicates 0.4s/lap lost in dirty air trail behind Haas. Full debrief in 30 mins.",
         "ferrari_drama": "Race ended P9. We will analyze Plan B and Plan C back in Maranello. Head down.",
         "hype_spotter": "Tough break buddy, wasn't our day with the yellow flags, but you fought hard!",
-        "kimi_minimal": "Difficult race. Car is off."
-    }
+        "kimi_minimal": "Difficult race. Car is off.",
+    },
 }
+
 
 class PostSessionDebriefEngine:
     """
@@ -58,12 +59,16 @@ class PostSessionDebriefEngine:
             category = "PODIUM_P2_P3"
         else:
             category = "TOUGH_RACE_P8_BELOW"
-            
-        persona_calls = POST_SESSION_RADIO_CALLS.get(category, POST_SESSION_RADIO_CALLS["PODIUM_P2_P3"])
+
+        persona_calls = POST_SESSION_RADIO_CALLS.get(
+            category, POST_SESSION_RADIO_CALLS["PODIUM_P2_P3"]
+        )
         return persona_calls.get(persona_id, persona_calls.get("gp_direct"))
 
     @classmethod
-    def generate_telemetry_debrief_summary(cls, session_data: Dict[str, Any]) -> Dict[str, Any]:
+    def generate_telemetry_debrief_summary(
+        cls, session_data: dict[str, Any]
+    ) -> dict[str, Any]:
         """
         FastF1-style structured telemetry debrief:
         - Apex Speed consistency
@@ -78,5 +83,5 @@ class PostSessionDebriefEngine:
             "braking_marker_consistency": "94.2% within 5m envelope",
             "traffic_time_lost": "1.8 seconds total in dirty air wake",
             "pitstop_efficiency": "2.4s stationary (Optimal)",
-            "key_takeaway": "Undercut on lap 24 created a 3.4s clean air buffer which secured the position."
+            "key_takeaway": "Undercut on lap 24 created a 3.4s clean air buffer which secured the position.",
         }

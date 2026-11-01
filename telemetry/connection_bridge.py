@@ -7,17 +7,17 @@ Handles multi-source ingestion:
 """
 
 import socket
-import threading
 from enum import Enum
-from typing import Dict, Any, Optional, List
-from telemetry.adapter_interface import SimGameType, NormalizedTelemetryFrame
+from typing import Any
+
+from telemetry.adapter_interface import SimGameType
 
 
 class PlatformType(Enum):
     PC = "pc"
     PS5 = "ps5"
     XBOX = "xbox"
-    PRO_MOTORSPORT = "pro_motorsport" # MoTeC / McLaren ATLAS stream
+    PRO_MOTORSPORT = "pro_motorsport"  # MoTeC / McLaren ATLAS stream
 
 
 class TelemetryConnectionConfig:
@@ -27,7 +27,7 @@ class TelemetryConnectionConfig:
         game: SimGameType = SimGameType.F1_23_24_25,
         target_ip: str = "0.0.0.0",
         port: int = 20777,
-        motec_csv_path: Optional[str] = None
+        motec_csv_path: str | None = None,
     ):
         self.platform = platform
         self.game = game
@@ -54,14 +54,14 @@ class UniversalConnectionBridge:
             # doesn't need to be reachable
             s.connect(("8.8.8.8", 80))
             ip = s.getsockname()[0]
-        except Exception:
+        except OSError:
             ip = "127.0.0.1"
         finally:
             s.close()
         return ip
 
     @staticmethod
-    def get_supported_entry_points() -> List[Dict[str, Any]]:
+    def get_supported_entry_points() -> list[dict[str, Any]]:
         lan_ip = UniversalConnectionBridge.get_local_lan_ip()
         return [
             {
@@ -76,8 +76,8 @@ class UniversalConnectionBridge:
                     "Set UDP Telemetry: ON.",
                     f"Set UDP IP Address to your PC LAN IP: {lan_ip}",
                     "Set UDP Port: 20777 | Send Rate: 60Hz.",
-                    "Save and start driving on your console."
-                ]
+                    "Save and start driving on your console.",
+                ],
             },
             {
                 "id": "pc_f1",
@@ -87,8 +87,8 @@ class UniversalConnectionBridge:
                 "how_it_connects": "Localhost UDP Socket",
                 "instructions": [
                     "In F1 25: Settings -> Telemetry Settings.",
-                    "Set UDP Telemetry: ON | IP: 127.0.0.1 | Port: 20777 | Rate: 60Hz."
-                ]
+                    "Set UDP Telemetry: ON | IP: 127.0.0.1 | Port: 20777 | Rate: 60Hz.",
+                ],
             },
             {
                 "id": "pc_acc",
@@ -98,8 +98,8 @@ class UniversalConnectionBridge:
                 "how_it_connects": "Windows Shared Memory (Zero-Lag MMF)",
                 "instructions": [
                     "Zero configuration needed! ACC broadcasts natively to Windows memory.",
-                    "Launch ACC and hit the track."
-                ]
+                    "Launch ACC and hit the track.",
+                ],
             },
             {
                 "id": "pc_iracing",
@@ -109,7 +109,7 @@ class UniversalConnectionBridge:
                 "how_it_connects": "iRacing Official SDK / pyirsdk pipe",
                 "instructions": [
                     "Launch iRacing session. PitwallKing connects to the telemetry pipe automatically."
-                ]
+                ],
             },
             {
                 "id": "motec_atlas",
@@ -119,7 +119,7 @@ class UniversalConnectionBridge:
                 "how_it_connects": "ATLAS / MoTeC CSV Export Stream",
                 "instructions": [
                     "Export session telemetry to CSV format from MoTeC i2 Pro or McLaren ATLAS.",
-                    "Provide file or streaming socket; PitwallKing parses channels directly."
-                ]
-            }
+                    "Provide file or streaming socket; PitwallKing parses channels directly.",
+                ],
+            },
         ]

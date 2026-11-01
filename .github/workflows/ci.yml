@@ -1,0 +1,43 @@
+name: PaddockPal CI Quality Gate
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate:
+    name: Lint, Test & Benchmark
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v2
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Dependencies
+        run: |
+          uv venv
+          uv pip install -e .
+          uv pip install pytest ruff
+
+      - name: Run Ruff Linter & Formatter Check
+        run: |
+          source .venv/bin/activate
+          ruff check .
+          ruff format --check .
+
+      - name: Run Unit Tests & Sub-Millisecond Latency Benchmarks
+        run: |
+          source .venv/bin/activate
+          pytest tests/ -v

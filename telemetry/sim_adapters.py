@@ -5,15 +5,14 @@ Concrete Sim Telemetry Adapters for:
 3. iRacing (iRacing MemMap SDK Interface)
 """
 
-import time
-from typing import Optional
-from telemetry.adapter_interface import SimTelemetryAdapter, NormalizedTelemetryFrame, SimGameType
+from telemetry.adapter_interface import NormalizedTelemetryFrame, SimTelemetryAdapter
 
 
 class F1EaUdpAdapter(SimTelemetryAdapter):
     """
     Adapter for EA Sports F1 23 / 24 / 25 via UDP stream on port 20777.
     """
+
     def __init__(self, port: int = 20777):
         self.port = port
         self.running = False
@@ -25,7 +24,7 @@ class F1EaUdpAdapter(SimTelemetryAdapter):
     def stop(self):
         self.running = False
 
-    def poll_latest_frame(self) -> Optional[NormalizedTelemetryFrame]:
+    def poll_latest_frame(self) -> NormalizedTelemetryFrame | None:
         # Unpacks raw C-struct packets and returns NormalizedTelemetryFrame
         return None
 
@@ -35,6 +34,7 @@ class AssettoCorsaAdapter(SimTelemetryAdapter):
     Adapter for Assetto Corsa & ACC via Windows Shared Memory (acpmf_physics, acpmf_graphics, acpmf_static).
     Zero socket overhead; direct memory mapping.
     """
+
     def __init__(self):
         self.running = False
         self.shm_physics_name = "Local\\acpmf_physics"
@@ -47,7 +47,7 @@ class AssettoCorsaAdapter(SimTelemetryAdapter):
     def stop(self):
         self.running = False
 
-    def poll_latest_frame(self) -> Optional[NormalizedTelemetryFrame]:
+    def poll_latest_frame(self) -> NormalizedTelemetryFrame | None:
         # Reads MMF buffers directly using Python ctypes / mmap
         return None
 
@@ -56,6 +56,7 @@ class IRacingAdapter(SimTelemetryAdapter):
     """
     Adapter for iRacing via pyirsdk memory mapped file (60Hz disk sub-system).
     """
+
     def __init__(self):
         self.running = False
 
@@ -66,6 +67,6 @@ class IRacingAdapter(SimTelemetryAdapter):
     def stop(self):
         self.running = False
 
-    def poll_latest_frame(self) -> Optional[NormalizedTelemetryFrame]:
+    def poll_latest_frame(self) -> NormalizedTelemetryFrame | None:
         # Reads iRacing variables (LapCurrentLapTime, RadioTransmitCarIdx, etc.)
         return None

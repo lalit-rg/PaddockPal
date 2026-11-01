@@ -8,16 +8,16 @@ Orchestrates:
 """
 
 import time
-from typing import Dict, Any, Optional
+from typing import Any
 
-from personas.persona_catalog import PERSONAS
-from telemetry.ring_buffer import TelemetryRingBuffer, TelemetrySnapshot
 from engine.tier1_engine import Tier1DeterministicEngine
-from racecraft_engine import RacecraftStrategyEngine
-from telemetry_analytics import TelemetryAnalyticsEngine
+from mock_data.bench import call_llm
+from personas.persona_catalog import PERSONAS
 from post_session_engine import PostSessionDebriefEngine
-from mock_data.bench import call_llm, format_telemetry_prompt
-from mock_data.scenarios import MOCK_SCENARIOS
+from racecraft_engine import RacecraftStrategyEngine
+from telemetry.ring_buffer import TelemetryRingBuffer
+from telemetry_analytics import TelemetryAnalyticsEngine
+
 
 class RaceEngineerAssistant:
     def __init__(self, persona_id: str = "gp_direct"):
@@ -30,7 +30,7 @@ class RaceEngineerAssistant:
             self.persona_id = persona_id
             self.tier1_engine.set_persona(persona_id)
 
-    def ask(self, query: str, state: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def ask(self, query: str, state: dict[str, Any] | None = None) -> dict[str, Any]:
         """
         Processes driver radio voice input:
         - First checks Tier-1 Deterministic Engine (<1ms)
@@ -38,7 +38,7 @@ class RaceEngineerAssistant:
         - Otherwise delegates to Tier-3 LLM reasoning with speculative masking
         """
         start = time.perf_counter()
-        
+
         # 1. Tier-1 Instant Metric
         t1_resp = self.tier1_engine.process_query(query, state)
         if t1_resp:
@@ -47,28 +47,31 @@ class RaceEngineerAssistant:
         # 2. Racecraft Critical Directives
         if state:
             racecraft_verdict = RacecraftStrategyEngine.compute_strategic_verdict(state)
-            if racecraft_verdict and racecraft_verdict.get("priority") in ["CRITICAL_STEWARD", "CRITICAL_WEATHER"]:
+            if racecraft_verdict and racecraft_verdict.get("priority") in [
+                "CRITICAL_STEWARD",
+                "CRITICAL_WEATHER",
+            ]:
                 return {
                     "tier": "Racecraft-Rule",
                     "latency_ms": (time.perf_counter() - start) * 1000,
-                    "response": racecraft_verdict["directive"]
+                    "response": racecraft_verdict["directive"],
                 }
 
         # 3. Tier-3 LLM Deep Strategy
         # Instant acknowledgment masking (so driver hears 'Copy, standby' in <30ms)
         p = PERSONAS.get(self.persona_id, PERSONAS["gp_direct"])
         ack = p["sample_acknowledgments"][0]
-        
+
         # In a real environment, format compressed state and call model
-        sim_resp = call_llm(self.persona_id, f"--- DRIVER RADIO ---\n\"{query}\"\n")
+        sim_resp = call_llm(self.persona_id, f'--- DRIVER RADIO ---\n"{query}"\n')
         return {
             "tier": 3,
             "latency_ms": sim_resp["latency_ms"],
             "masking_ack": ack,
-            "response": sim_resp["text"]
+            "response": sim_resp["text"],
         }
 
-    def evaluate_1hz_stream(self, state: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    def evaluate_1hz_stream(self, state: dict[str, Any]) -> dict[str, Any] | None:
         """
         Background rolling prescriptive sweep evaluated once every second.
         Returns directives only if an actionable threshold is breached (Priority Queue).
@@ -78,13 +81,16 @@ class RaceEngineerAssistant:
             return prescriptive
         return None
 
-    def post_session_debrief(self, finish_position: int, session_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def post_session_debrief(
+        self, finish_position: int, session_data: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         """
         Post-race radio call & FastF1-style telemetry summary.
         """
-        radio = PostSessionDebriefEngine.generate_radio_call(self.persona_id, finish_position)
-        summary = PostSessionDebriefEngine.generate_telemetry_debrief_summary(session_data or {"position": finish_position})
-        return {
-            "radio_call": radio,
-            "summary": summary
-        }
+        radio = PostSessionDebriefEngine.generate_radio_call(
+            self.persona_id, finish_position
+        )
+        summary = PostSessionDebriefEngine.generate_telemetry_debrief_summary(
+            session_data or {"position": finish_position}
+        )
+        return {"radio_call": radio, "summary": summary}
